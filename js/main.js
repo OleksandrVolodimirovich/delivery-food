@@ -19,6 +19,16 @@ const cardsMenu = document.querySelector('.cards-menu');
 
 let login = localStorage.getItem('fastDelivery'); //замімть пустого значення змінній login присвоюэмо значення з localStorage
 
+const valid = function(str) {  //ф-ція маски валідацї login
+  const nameReg = /^[a-zA-Z][a-zA-Z0-9-_\.]{1,20}$/;
+  if (!nameReg.test(str)){ //виводить попередження про введені не вірні дані
+    if (str.length > 20){
+      console.log('long string')
+    }
+  };
+  return nameReg.test(str);
+}
+
 function toggleModal() {
   modal.classList.toggle("is-open");
 }
@@ -26,6 +36,12 @@ function toggleModal() {
 function toogleModalAuth(){ //ф-ція виклику вікна авторизизації
   loginInput.style.borderColor = ''; //очищає поле логін від червоного бордера
   modalAuth.classList.toggle('is-open');
+}
+
+function returnMain() { //ф-ція при виході в ресторані з авторизації повертає на головну сторінку
+  containerPromo.classList.remove('hide');
+    restaurants.classList.remove('hide');
+    menu.classList.add('hide');
 }
 
 function authorized(){
@@ -36,8 +52,8 @@ function authorized(){
     userName.style.display = '';    //повертає стилі CSS   
     buttonOut.style.display = '';   //повертає стилі CSS  
     buttonOut.removeEventListener('click', logOut);
-
     checkAuth(); //перевірка авторизації
+    returnMain(); //вихід на головну
   }
   console.log('авторизований');
 
@@ -57,7 +73,7 @@ function notAuthorized() {
   function logIn(event) {
     event.preventDefault();  //відміна перезавантаження сторінки, при натисканні на кнопку форми 'submit'
     
-    if(maskInput(loginInput.value)){ //умова при якій не заповнені поля не проходять авторизацію
+    if(maskInput(loginInput.value) && valid(loginInput.value)){ //умова при якій не заповнені поля не проходять авторизацію
 
       login = loginInput.value;  //значення яке вводить користувач
       localStorage.setItem('fastDelivery', login) //збереження логіна в браузері по йпі(ip)
@@ -69,6 +85,7 @@ function notAuthorized() {
      checkAuth();   //провірка авторизований чи неавторизований користувач
     }else{
       loginInput.style.borderColor = '#ff2400'; //умова при якій поля логін не заповненні, а тому підсвічується бордер червоним
+      loginInput.value = ''; //очистка введених невырних даних
     }
   }
 
@@ -166,11 +183,7 @@ close.addEventListener("click", toggleModal);
 
 cardsRestaurants.addEventListener('click', openGoods);
 
-logo.addEventListener('click', function() { //ф-ція при натисканні на лого повертає головну сторінку
-  containerPromo.classList.remove('hide');
-    restaurants.classList.remove('hide');
-    menu.classList.add('hide');
-})
+logo.addEventListener('click', returnMain); //при натисканні на лого повертає на головну
 
 
 checkAuth();
