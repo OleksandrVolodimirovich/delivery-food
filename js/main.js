@@ -16,8 +16,23 @@ const restaurants = document.querySelector('.restaurants');
 const menu = document.querySelector('.menu');
 const logo = document.querySelector('.logo');
 const cardsMenu = document.querySelector('.cards-menu');
+const restaurantTitle = document.querySelector('.restaurant-title');
+const rating = document.querySelector('.rating');
+const minPrice = document.querySelector('.price');
+const category = document.querySelector('.category');
 
 let login = localStorage.getItem('fastDelivery'); //замімть пустого значення змінній login присвоюэмо значення з localStorage
+
+const getData = async function(url) {
+
+  const response = await fetch(url);
+  if(!response.ok){
+    throw new Error(`Помилка по адресу ${url}, статус помилки ${response.status}!`);
+  }
+
+  return await response.json();
+};
+console.log(getData('./db/partners.json'));
 
 const valid = function(str) {  //ф-ція маски валідацї login
   const nameReg = /^[a-zA-Z][a-zA-Z0-9-_\.]{1,20}$/;
@@ -33,7 +48,7 @@ function toggleModal() {
   modal.classList.toggle("is-open");
 }
 
-function toogleModalAuth(){ //ф-ція виклику вікна авторизизації
+function toggleModalAuth(){ //ф-ція виклику вікна авторизизації
   loginInput.style.borderColor = ''; //очищає поле логін від червоного бордера
   modalAuth.classList.toggle('is-open');
 }
@@ -77,9 +92,9 @@ function notAuthorized() {
 
       login = loginInput.value;  //значення яке вводить користувач
       localStorage.setItem('fastDelivery', login) //збереження логіна в браузері по йпі(ip)
-      toogleModalAuth();    //при натисканні кнопки "войти" модальне вікно закривається автоматично
-      buttonAuth.removeEventListener('click', toogleModalAuth); //видалення класу ".is-open"
-      closeAuth.removeEventListener('click', toogleModalAuth);  //видалення класу ".is-open"
+      toggleModalAuth();    //при натисканні кнопки "войти" модальне вікно закривається автоматично
+      buttonAuth.removeEventListener('click', toggleModalAuth); //видалення класу ".is-open"
+      closeAuth.removeEventListener('click', toggleModalAuth);  //видалення класу ".is-open"
       logInForm.removeEventListener('submit', logIn);  //видалення індифікатора "#login"
       logInForm.reset(); // очистка даних на полях форми авторизації (при повторному вході залишався логін)
      checkAuth();   //провірка авторизований чи неавторизований користувач
@@ -89,8 +104,8 @@ function notAuthorized() {
     }
   }
 
-  buttonAuth.addEventListener('click', toogleModalAuth);  //при натисканні кнопки "Войти" відкривається модальне вікно тому, що додається класс '.is-open'
-  closeAuth.addEventListener('click', toogleModalAuth);   // при натисканны на хрестик модальне выкно закриваэться, клас ".is-open" видаляється
+  buttonAuth.addEventListener('click', toggleModalAuth);  //при натисканні кнопки "Войти" відкривається модальне вікно тому, що додається класс '.is-open'
+  closeAuth.addEventListener('click', toggleModalAuth);   // при натисканны на хрестик модальне выкно закриваэться, клас ".is-open" видаляється
   logInForm.addEventListener('submit', logIn); //при натисканні на кнопку в формі "submit" включається ф-ція logIn
 }
 
@@ -102,21 +117,27 @@ function checkAuth() { //ф-ція провірки авторизації
   }
 }
 
-function createCardRestaurant(){
+function createCardRestaurant({ image, kitchen, name, price, stars, products, 
+      time_of_delivery : timeOfDelivery //перейменування задопомогою ":"
+  }) {
+    
   const card = `
-    <a class="card card-restaurant">
-      <img src="img/pizza-plus/preview.jpg" alt="image" class="card-image"/>
+    <a class="card card-restaurant" 
+    data-products="${products}"
+    data-info = "${[name, price, stars, kitchen]}"
+    >
+      <img src="${image}" alt="image" class="card-image"/>
       <div class="card-text">
         <div class="card-heading">
-          <h3 class="card-title">Пицца плюс</h3>
-          <span class="card-tag tag">50 мин</span>
+          <h3 class="card-title">${name}</h3>
+          <span class="card-tag tag">${timeOfDelivery}</span>
         </div>
         <div class="card-info">
           <div class="rating">
-            4.5
+            ${stars}
           </div>
-          <div class="price">От 900 ₽</div>
-          <div class="category">Пицца</div>
+          <div class="price">От ${price} ₽</div>
+          <div class="category">${kitchen}</div>
         </div>
       </div>
     </a>
@@ -126,26 +147,26 @@ function createCardRestaurant(){
 
 }
 
-function createCardGood() {
+function createCardGood({ description, id, image, name, price }) {
+
   const card = document.createElement('div');
   card.className = 'card';
 
   card.insertAdjacentHTML('beforeend', `
-      <img src="img/pizza-plus/pizza-oleole.jpg" alt="image" class="card-image"/>
+      <img src="${image}" alt="image" class="card-image"/>
       <div class="card-text">
         <div class="card-heading">
-          <h3 class="card-title card-title-reg">Пицца Оле-Оле</h3>
+          <h3 class="card-title card-title-reg">${name}</h3>
         </div>
         <div class="card-info">
-          <div class="ingredients">Соус томатный, сыр «Моцарелла», черри, маслины, зелень, майонез
-          </div>
+          <div class="ingredients">${description}</div>
         </div>
         <div class="card-buttons">
           <button class="button button-primary button-add-cart">
             <span class="button-card-text">В корзину</span>
             <span class="button-cart-svg"></span>
           </button>
-          <strong class="card-price-bold">440 ₽</strong>
+          <strong class="card-price-bold">${price} ₽</strong>
         </div>
       </div>
     `);
@@ -153,23 +174,33 @@ function createCardGood() {
     cardsMenu.insertAdjacentElement('beforeend', card);
 }
 
-function openGoods(event) {
+function openGoods(event) { //відкриває меню ресторану
+  const target = event.target;  
+  if(login){
 
-  const target = event.target;
-  const restaurant = target.closest('.card-restaurant');
+    const restaurant = target.closest('.card-restaurant');
+    if(restaurant){  
+          
+      const info = restaurant.dataset.info.split(',');
+      const [name, price, stars, kitchen] = info;
 
-  if(restaurant){
-      
-      if(login){
-        cardsMenu.textContent = '';  //щоб не дублювалися піцци, очистка відбувається після натискання на ресторан
-        containerPromo.classList.add('hide');
-        restaurants.classList.add('hide');
-        menu.classList.remove('hide');
-        createCardGood();
-      } else {
-        toogleModalAuth();
-      }
-    }
+        cardsMenu.textContent = '';  //очистка відбувається після натискання на ресторан
+        containerPromo.classList.add('hide'); //приховує контейнер промо
+        restaurants.classList.add('hide'); //приховує ресторани
+        menu.classList.remove('hide');  //показує меню 
+        
+        restaurantTitle.textContent = name;
+        rating.textContent = stars;
+        minPrice.textContent = `От ${price} ₽`; //'От' + price + '₽';
+        category.textContent = kitchen;
+
+        getData(`./db/${restaurant.dataset.products}`).then(function(data){
+          data.forEach(createCardGood)
+        });
+    } 
+  }else {
+    toggleModalAuth();
+  }
 }
 
 function maskInput(string) { 
@@ -178,37 +209,92 @@ function maskInput(string) {
 
 
 
-cartButton.addEventListener("click", toggleModal);
-close.addEventListener("click", toggleModal);
+function init(){
+  getData('./db/partners.json').then(function(data){
+    data.forEach(createCardRestaurant);
+  });
+  
+  cartButton.addEventListener("click", toggleModal);
+  close.addEventListener("click", toggleModal);
+  
+  cardsRestaurants.addEventListener('click', openGoods);
+  
+  logo.addEventListener('click', returnMain); //при натисканні на лого повертає на головну
+  
+  
+  checkAuth();
+};
 
-cardsRestaurants.addEventListener('click', openGoods);
-
-logo.addEventListener('click', returnMain); //при натисканні на лого повертає на головну
-
-
-checkAuth();
-createCardRestaurant();
+init();
 
 const swiper = new Swiper('.swiper-container', {
   loop: true,
   autoplay: true,
 });
 
-// buttonAuth.addEventListener('click', function(){
-//   console.log('Hello');
-// });
+
+/*//---альтернативний варіант добавлення [name, price, stars, kitchen] без data-атрибутів ----
 
 
+function createCardRestaurant({ image, kitchen, name, price, stars, products, 
+  time_of_delivery : timeOfDelivery //перейменування задопомогою ":"
+}) {
 
+const card = document.createElement('a');
+card.className = 'card card-restaurant';
+card.products = products;
+card.info = [name, price, stars, kitchen];
 
+card.insertAdjacentHTML('beforeend', `
 
+  <img src="${image}" alt="image" class="card-image"/>
+  <div class="card-text">
+    <div class="card-heading">
+      <h3 class="card-title">${name}</h3>
+      <span class="card-tag tag">${timeOfDelivery}</span>
+    </div>
+    <div class="card-info">
+      <div class="rating">
+        ${stars}
+      </div>
+      <div class="price">От ${price} ₽</div>
+      <div class="category">${kitchen}</div>
+    </div>
+  </div>
+</a>
+`);
+cardsRestaurants.insertAdjacentElement('beforeend', card);
+}
 
+function openGoods(event) { //відкриває меню ресторану
+  const target = event.target;  
+  const restaurant = target.closest('.card-restaurant');
 
+  if(restaurant){
+    
+    if(login){
+        const [name, price, stars, kitchen] = restaurant.info;
 
+        cardsMenu.textContent = '';  //очистка відбувається після натискання на ресторан
+        containerPromo.classList.add('hide'); //приховує контейнер промо
+        restaurants.classList.add('hide'); //приховує ресторани
+        menu.classList.remove('hide');  //показує меню 
+        
+        restaurantTitle.textContent = name;
+        rating.textContent = stars;
+        minPrice.textContent = `От ${price} ₽`; //'От' + price + '₽';
+        category.textContent = kitchen;
 
-
-
-
+        getData(`./db/${restaurant.products}`).then(function(data){
+          data.forEach(createCardGood)
+        });
+      } else {
+        toggleModalAuth();
+      }
+  }
+}
+*/
+//----------------------------------------------------------------
 
 
 
