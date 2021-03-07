@@ -20,6 +20,7 @@ const restaurantTitle = document.querySelector('.restaurant-title');
 const rating = document.querySelector('.rating');
 const minPrice = document.querySelector('.price');
 const category = document.querySelector('.category');
+const inputSearch = document.querySelector('.input-search');
 
 let login = localStorage.getItem('fastDelivery'); //замімть пустого значення змінній login присвоюэмо значення з localStorage
 
@@ -180,7 +181,7 @@ function openGoods(event) { //відкриває меню ресторану
 
     const restaurant = target.closest('.card-restaurant');
     if(restaurant){  
-          
+
       const info = restaurant.dataset.info.split(',');
       const [name, price, stars, kitchen] = info;
 
@@ -221,6 +222,54 @@ function init(){
   
   logo.addEventListener('click', returnMain); //при натисканні на лого повертає на головну
   
+  inputSearch.addEventListener('keydown', function(event){
+    if(event.keyCode === 13){
+      const target = event.target; //target - спрацьовує при натисканні на enter
+      const value = target.value.toLowerCase().trim(); //значення яке вводиться в input, передається з маленької букви. Заборона пробілів
+      target.value = ''; //очищення поля вводу пошуку
+      if(!value || value.length <3){ //умова: якщо введено пусте значення або текст менше 3 символів, тоді...
+        target.style.backgroundColor = 'tomato'; // фон при невірному вводі даних
+        setTimeout(function(){ //ф-ція, яка при невірних даних через 2сек робить поле вводу пустим(типу очистка) 
+            target.style.backgroundColor = '';
+        }, 2000);
+        return; //для того щоб дольше код не виконувався
+      }
+            
+      const goods = []; //відфільтровані товари
+      getData('./db/partners.json')
+        .then(function(data){ //callback ф-ція
+            const products = data.map(function(item){ //перебирає масив методом map
+                return item.products; //повертає з масиву products
+            });
+            products.forEach(function(product){ //перебирає масив методом forEach
+              getData(`./db/${product}`) //відправка запиту product (по черзі 6 продуктів)
+                .then(function(data){  //отримуємо дані data  у вигляді масиву
+                    goods.push(...data) //спред оператор (...), отримаємо всі елементи в один масив
+                    const searchGoods = goods.filter(function(item){
+                      return item.name.toLowerCase().includes(value); //повертає те, що введено в input з маленької букви (можна добавити умову через або(||) для description і т.п.)
+                    })
+                        console.log(searchGoods);
+
+                    cardsMenu.textContent = '';  //очистка відбувається після натискання на ресторан
+                    containerPromo.classList.add('hide'); //приховує контейнер промо
+                    restaurants.classList.add('hide'); //приховує ресторани
+                    menu.classList.remove('hide');  //показує меню 
+                    
+                    restaurantTitle.textContent = 'Результат пошуку';
+                    rating.textContent = '';
+                    minPrice.textContent = '';
+                    category.textContent = '';
+
+                    return searchGoods; //повертаємо дані в data
+
+                  })
+                  .then(function(data){ //отримуємо дані з searchGoods
+                    data.forEach(createCardGood); // перебираємо отримані дані в data
+                  })
+            })
+      });
+    }
+  });
   
   checkAuth();
 };
