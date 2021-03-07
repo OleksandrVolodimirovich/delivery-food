@@ -1,6 +1,6 @@
 'use strict';
 
-const cartButton = document.querySelector("#cart-button");
+const cartButton = document.querySelector('#cart-button');
 const modal = document.querySelector(".modal");
 const close = document.querySelector(".close");
 const buttonAuth = document.querySelector('.button-auth');
@@ -23,6 +23,7 @@ const category = document.querySelector('.category');
 const inputSearch = document.querySelector('.input-search');
 
 let login = localStorage.getItem('fastDelivery'); //замімть пустого значення змінній login присвоюэмо значення з localStorage
+const cart = [];
 
 const getData = async function(url) {
 
@@ -66,21 +67,20 @@ function authorized(){
     localStorage.removeItem('fastDelivery'); //видалення логін з localStorage
     buttonAuth.style.display = '';  //повертає стилі CSS 
     userName.style.display = '';    //повертає стилі CSS   
-    buttonOut.style.display = '';   //повертає стилі CSS  
+    buttonOut.style.display = '';   //повертає стилі CSS 
+    cartButton.style.display = '';  //приховує кнопку корзини при logOut
     buttonOut.removeEventListener('click', logOut);
     checkAuth(); //перевірка авторизації
     returnMain(); //вихід на головну
   }
   console.log('авторизований');
-
   userName.textContent = login;  //виводить логін біля кнопки вийти
-
   buttonAuth.style.display = 'none';
   userName.style.display = 'inline';
-  buttonOut.style.display = 'block';
-
+  buttonOut.style.display = 'flex';
+  cartButton.style.display = 'flex';
   buttonOut.addEventListener('click', logOut);
-
+  console.log('bom');
 }
 
 function notAuthorized() {
@@ -167,7 +167,7 @@ function createCardGood({ description, id, image, name, price }) {
             <span class="button-card-text">В корзину</span>
             <span class="button-cart-svg"></span>
           </button>
-          <strong class="card-price-bold">${price} ₽</strong>
+          <strong class="card-price card-price-bold">${price} ₽</strong>
         </div>
       </div>
     `);
@@ -208,7 +208,16 @@ function maskInput(string) {
   return !!string.trim()      //видаляє пробіли
 }
 
+function addToCart(event){ //ф-ція працює при натисканні на корзину
+  const target = event.target;
+  const buttonAddToCart = target.closest('.button-add-cart');
 
+  if(buttonAddToCart){
+    const cart = target.closest('.card');
+    const title = cart.querySelector('.card-title-reg');
+    const cost = querySelector('.card-price');
+  }
+}
 
 function init(){
   getData('./db/partners.json').then(function(data){
@@ -217,7 +226,7 @@ function init(){
   
   cartButton.addEventListener("click", toggleModal);
   close.addEventListener("click", toggleModal);
-  
+  cardsMenu.addEventListener('click', addToCart); //обробник події, по кліку на корзину запускає ф-цію addToCart
   cardsRestaurants.addEventListener('click', openGoods);
   
   logo.addEventListener('click', returnMain); //при натисканні на лого повертає на головну
