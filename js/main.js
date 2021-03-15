@@ -21,6 +21,9 @@ const rating = document.querySelector('.rating');
 const minPrice = document.querySelector('.price');
 const category = document.querySelector('.category');
 const inputSearch = document.querySelector('.input-search');
+const modalBody = document.querySelector('.modal-body');
+const modalPrice = document.querySelector('.modal-pricetag');
+const buttonClearCart = document.querySelector('.clear-cart');
 
 let login = localStorage.getItem('fastDelivery'); //замімть пустого значення змінній login присвоюэмо значення з localStorage
 const cart = [];
@@ -152,7 +155,7 @@ function createCardGood({ description, id, image, name, price }) {
 
   const card = document.createElement('div');
   card.className = 'card';
-
+  // card.id = id; // добавлення id 1-варіан, отримати по карточці
   card.insertAdjacentHTML('beforeend', `
       <img src="${image}" alt="image" class="card-image"/>
       <div class="card-text">
@@ -163,7 +166,7 @@ function createCardGood({ description, id, image, name, price }) {
           <div class="ingredients">${description}</div>
         </div>
         <div class="card-buttons">
-          <button class="button button-primary button-add-cart">
+            <button class="button button-primary button-add-cart" id="${id}"> <!-- добавлення id 2-варіант, отримати по кнопці -->
             <span class="button-card-text">В корзину</span>
             <span class="button-cart-svg"></span>
           </button>
@@ -213,10 +216,89 @@ function addToCart(event){ //ф-ція працює при натисканні 
   const buttonAddToCart = target.closest('.button-add-cart');
 
   if(buttonAddToCart){
-    const cart = target.closest('.card');
-    const title = cart.querySelector('.card-title-reg');
-    const cost = querySelector('.card-price');
-  }
+    const card = target.closest('.card');
+    const title = card.querySelector('.card-title-reg').textContent; // textContent - для отримання даних у вигляді тексту
+    const cost = card.querySelector('.card-price').textContent;
+    const id = buttonAddToCart.id;
+
+    const food = cart.find(function(item){ //провіряє чи є в нашому масиві (умова записана в callback ф-ції)
+      return item.id === id; // повертаємо якщо в item id , ми будемо порівнювати id з тим який в даний момент ми добавляємо 
+    })
+
+    if(food){ //якщо food вже присутній, тоді
+      //food.count = food.count + 1; <-- такий запис небажаний
+      food.count += 1; //count збільшується на одиницю
+    } else {  //якщо такої їди(id) немає добавимо її з нуля
+      cart.push({
+        //id: id,
+        id, //ES6
+        //title: title,
+        title, //ES6
+        //cost: cost,
+        cost, //ES6
+        count: 1  //к-сть товарів добавляється по 1 шт.
+      });
+    }
+  }console.log(cart);
+}
+
+function renderCart(){ //опис ф-ції формування карточки корзини
+  modalBody.textContent = ''; //очистка корзини
+
+  cart.forEach(function({ id, title, cost, count }){ //перебирає товари в корзині
+    const itemCart = ` <!-- формування HTML-коду корзини -->
+        <div class="food-row">
+					<span class="food-name">${title}</span>
+					<strong class="food-price">${cost}</strong>
+					<div class="food-counter">
+						<button class="counter-button counter-minus" data-id=${id}>-</button>
+						<span class="counter">${count}</span>
+						<button class="counter-button counter-plus" data-id=${id}>+</button>
+					</div>
+				</div>
+      `;
+      modalBody.insertAdjacentHTML('afterbegin', itemCart)  //добавляємо HTML-код в кінець
+  });
+  const totalPrice = cart.reduce(function(result, item){ //формування ціни
+    return result + (parseFloat(item.cost) * item.count); //повертає 0 + добавляє ціну і т.д. Для того щоб небуло конкатинації використовується parseFloat. Для сумування одинакових блюд * на к-сть(item.count)
+  }, 0); //при першому добавленні result буде братися з item, а це буде обєкт(це не протрібно).Потрібна сума, тому другим значенням ставимо 0
+  modalPrice.textContent = totalPrice + ' ₽'; //виводить результат в модальне вікно
+}
+
+function changeCount(event){ //ф-ція в корзині + -
+    const target = event.target;
+  
+    // 1 варіант умови
+    if (target.classList.contains('counter-button')){
+      const food = cart.find(function(item){
+        return item.id === target.dataset.id;
+      });
+      if(target.classList.contains('counter-minus')) {
+        food.count--;
+        if (food.count===0){
+          cart.splice(cart.indexOf(food), 1);
+        }
+      };
+      if(target.classList.contains('counter-plus')) food.count++;
+      renderCart();
+    }
+
+    // 2 варіант умови
+    /*
+    if(target.classList.contains('counter-minus')){ //якщо при натисканні на мінус провіряє чи є клас counter-minus
+        const food = cart.find(function(item){  //всередині корзини шукаємо
+          return item.id === target.dataset.id; //елемент в якого item.id буде співпадати data-атрибутом id
+        });
+        food.count--; //відніміє на 1
+        renderCart(); // перезапускає renderCart
+    }
+    if(target.classList.contains('counter-plus')){
+        const food = cart.find(function(item){
+          return item.id === target.dataset.id;
+        });
+      food.count++;
+      renderCart();
+    }*/
 }
 
 function init(){
@@ -224,7 +306,16 @@ function init(){
     data.forEach(createCardRestaurant);
   });
   
-  cartButton.addEventListener("click", toggleModal);
+  cartButton.addEventListener("click", function(){ //при кліку на корзину виконується ф-ція
+    renderCart(); //формування карточки
+    toggleModal(); //викликає модальне вікно
+  });
+  buttonClearCart.addEventListener('click', function(){
+    cart.length = 0;
+    toggleModal();
+  })
+  modalBody.addEventListener('click', changeCount); //при кліку в корзині на + або -
+
   close.addEventListener("click", toggleModal);
   cardsMenu.addEventListener('click', addToCart); //обробник події, по кліку на корзину запускає ф-цію addToCart
   cardsRestaurants.addEventListener('click', openGoods);
